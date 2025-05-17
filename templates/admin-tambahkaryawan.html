@@ -1,0 +1,118 @@
+<!--
+    File: admin-tambahkaryawan.html
+    Deskripsi: Template untuk halaman tambah karyawan baru
+
+    Halaman ini menampilkan form untuk menambahkan data karyawan baru.
+    Form ini ditampilkan sebagai halaman terpisah (bukan sebagai modal).
+
+    Endpoint terkait:
+    - GET /admin/tambahkaryawan: Menampilkan halaman tambah karyawan
+    - POST /admin/tambah_karyawan: Memproses form tambah karyawan
+
+    Data yang dikirim ke backend:
+    - nama: Nama lengkap karyawan
+    - email: Email karyawan
+    - no_telepon: Nomor telepon karyawan
+    - jabatan: Jabatan karyawan
+    - departemen: Departemen karyawan
+    - alamat: Alamat karyawan
+    - tanggal_bergabung: Tanggal karyawan bergabung
+    - foto: File foto karyawan (opsional)
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Karyawan</title>
+    <!-- Import Bootstrap CSS untuk styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Styling untuk header modal */
+        .modal-header {
+            background-color: #0d6efd;
+            color: white;
+        }
+        /* Styling untuk tombol close */
+        .btn-close {
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Modal yang selalu ditampilkan (bukan popup) -->
+    <div class="modal fade show" style="display: block;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <!-- Header modal dengan judul dan tombol close -->
+                <div class="modal-header">
+                    <h5 class="modal-title">Tambah Karyawan</h5>
+                    <!-- Tombol kembali ke halaman data karyawan -->
+                    <a href="/admin/datakaryawan" class="btn-close"></a>
+                </div>
+                <!-- Body modal dengan form -->
+                <div class="modal-body">
+                    <!-- Form tambah karyawan dengan multipart/form-data untuk upload foto -->
+                    <form action="/admin/tambah_karyawan" method="POST" enctype="multipart/form-data">
+                        <!-- Input nama karyawan -->
+                        <div class="mb-3">
+                            <label for="nama" class="form-label">Nama Lengkap</label>
+                            <input type="text" class="form-control" id="nama" name="nama" required>
+                        </div>
+                        <!-- Input email karyawan -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <!-- Input nomor telepon karyawan -->
+                        <div class="mb-3">
+                            <label for="no_telepon" class="form-label">No. Telepon</label>
+                            <input type="tel" class="form-control" id="no_telepon" name="no_telepon" required>
+                        </div>
+                        <!-- Input jabatan karyawan -->
+                        <div class="mb-3">
+                            <label for="jabatan" class="form-label">Jabatan</label>
+                            <input type="text" class="form-control" id="jabatan" name="jabatan" required>
+                        </div>
+                        <!-- Input departemen karyawan -->
+                        <div class="mb-3">
+                            <label for="departemen" class="form-label">Departemen</label>
+                            <input type="text" class="form-control" id="departemen" name="departemen" required>
+                        </div>
+                        <!-- Input alamat karyawan -->
+                        <div class="mb-3">
+                            <label for="alamat" class="form-label">Alamat</label>
+                            <textarea class="form-control" id="alamat" name="alamat" rows="3" required></textarea>
+                        </div>
+                        <!-- Input tanggal bergabung karyawan -->
+                        <div class="mb-3">
+                            <label for="tanggal_bergabung" class="form-label">Tanggal Bergabung</label>
+                            <input type="date" class="form-control" id="tanggal_bergabung" name="tanggal_bergabung" required>
+                        </div>
+                        <!-- Input foto karyawan (opsional) -->
+                        <div class="mb-3">
+                            <label for="foto" class="form-label">Foto Karyawan</label>
+                            <input type="file" class="form-control" id="foto" name="foto" accept="image/*">
+                            <small class="text-muted">Format yang didukung: JPG, JPEG, PNG. Maksimal 2MB</small>
+                        </div>
+                        <!-- Tombol aksi -->
+                        <div class="text-end">
+                            <!-- Tombol batal kembali ke halaman data karyawan -->
+                            <a href="/admin/datakaryawan" class="btn btn-secondary">Batal</a>
+                            <!-- Tombol submit form -->
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semi-transparent backdrop untuk efek modal -->
+    <div class="modal-backdrop fade show"></div>
+
+    <!-- Import Bootstrap JS untuk fungsionalitas komponen Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

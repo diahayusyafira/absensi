@@ -1,0 +1,387 @@
+<!--
+    File: admin-pengaturan.html
+    Deskripsi: Template untuk halaman pengaturan sistem absensi
+
+    Halaman ini digunakan untuk mengatur parameter sistem absensi, seperti:
+    - Jam masuk kerja
+    - Jam keluar kerja
+    - Toleransi keterlambatan (dalam menit)
+
+    Endpoint terkait:
+    - GET /admin/pengaturan: Menampilkan halaman pengaturan
+    - POST /admin/pengaturan: Memproses form pengaturan
+
+    Data yang dibutuhkan dari backend:
+    - pengaturan: Objek yang berisi pengaturan saat ini (jam_masuk, jam_keluar, toleransi_keterlambatan)
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan - PT Matura Jaya</title>
+    <!-- Import Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Reset CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        /* Pengaturan dasar untuk body */
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            padding: 25px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            height: 100vh;
+            position: fixed;
+            color: white;
+        }
+
+        .admin-label {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            backdrop-filter: blur(5px);
+        }
+
+        .menu-list {
+            list-style: none;
+        }
+
+        .menu-item {
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 25px;
+            margin-left: 280px;
+            background-color: #f4f6f9;
+        }
+
+        .welcome-header {
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .welcome-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .welcome-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+        }
+
+        .settings-container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .settings-section {
+            margin-bottom: 30px;
+        }
+
+        .settings-section h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .time-settings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .time-input-group {
+            margin-bottom: 20px;
+        }
+
+        .time-input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .time-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .time-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .save-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .save-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .content {
+                margin-left: 0;
+            }
+
+            .time-settings {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="admin-label">
+                <i class="fas fa-building"></i>
+                PT MATURA JAYA
+            </div>
+            <ul class="menu-list">
+                <li class="menu-item">
+                    <i class="fas fa-chart-line"></i>
+                    Dashboard
+                </li>
+                <li class="menu-item">
+                    <i class="fas fa-users"></i>
+                    Data Karyawan
+                </li>
+                <li class="menu-item">
+                    <i class="fas fa-clipboard-list"></i>
+                    Laporan Absensi
+                </li>
+                <li class="menu-item active">
+                    <i class="fas fa-cog"></i>
+                    Pengaturan
+                </li>
+                <li class="menu-item" style="margin-top: auto;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Keluar
+                </li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <div class="welcome-header">
+                <h1>Pengaturan</h1>
+                <p>PT Matura Jaya - Sistem Manajemen Absensi Karyawan</p>
+            </div>
+
+            <!-- Container untuk form pengaturan -->
+            <div class="settings-container">
+                <!-- Bagian pengaturan waktu absensi -->
+                <div class="settings-section">
+                    <h2>
+                        <i class="fas fa-clock"></i>
+                        Pengaturan Waktu Absensi
+                    </h2>
+                    <!-- Form pengaturan waktu dengan method POST -->
+                    <form id="timeSettingsForm" method="POST">
+                        <!-- Grid layout untuk input waktu -->
+                        <div class="time-settings">
+                            <!-- Input jam masuk kerja -->
+                            <div class="time-input-group">
+                                <label for="absensiMasuk">Absensi Masuk</label>
+                                <!-- Input type time dengan value dari data backend -->
+                                <input type="time" id="absensiMasuk" name="jam_masuk" class="time-input" required
+                                       value="{{ pengaturan.jam_masuk if pengaturan else '' }}">
+                            </div>
+
+                            <!-- Input jam keluar kerja -->
+                            <div class="time-input-group">
+                                <label for="absensiKeluar">Absensi Keluar</label>
+                                <!-- Input type time dengan value dari data backend -->
+                                <input type="time" id="absensiKeluar" name="jam_keluar" class="time-input" required
+                                       value="{{ pengaturan.jam_keluar if pengaturan else '' }}">
+                            </div>
+
+                            <!-- Input toleransi keterlambatan -->
+                            <div class="time-input-group">
+                                <label for="toleransi">Toleransi Keterlambatan (menit)</label>
+                                <!-- Input type number dengan value dari data backend -->
+                                <input type="number" id="toleransi" name="toleransi_keterlambatan" class="time-input" min="0" required
+                                       value="{{ pengaturan.toleransi_keterlambatan if pengaturan else 0 }}">
+                            </div>
+                        </div>
+
+                        <!-- Tombol submit -->
+                        <button type="submit" class="save-button">
+                            <i class="fas fa-save"></i>
+                            Perbarui Waktu
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import library SweetAlert2 untuk notifikasi yang lebih menarik -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Script JavaScript untuk interaktivitas -->
+    <script>
+        // Event listener untuk menu navigasi
+        // Mengarahkan ke halaman yang sesuai saat menu diklik
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Ambil teks menu yang diklik
+                const menuText = this.textContent.trim();
+                // Arahkan ke URL yang sesuai berdasarkan menu yang diklik
+                switch(menuText) {
+                    case 'Dashboard':
+                        window.location.href = '/admin/dashboard';
+                        break;
+                    case 'Data Karyawan':
+                        window.location.href = '/admin/datakaryawan';
+                        break;
+                    case 'Laporan Absensi':
+                        window.location.href = '/admin/laporanabsensi';
+                        break;
+                    case 'Pengaturan':
+                        window.location.href = '/admin/pengaturan';
+                        break;
+                    case 'Keluar':
+                        window.location.href = '/admin/logout';
+                        break;
+                }
+            });
+        });
+
+        // Handler untuk submit form pengaturan waktu
+        document.getElementById('timeSettingsForm').addEventListener('submit', async function(e) {
+            // Mencegah form melakukan submit default
+            e.preventDefault();
+
+            // Ambil nilai dari input form
+            const absensiMasuk = document.getElementById('absensiMasuk').value;
+            const absensiKeluar = document.getElementById('absensiKeluar').value;
+            const toleransi = document.getElementById('toleransi').value;
+
+            // Buat objek FormData untuk dikirim ke server
+            const formData = new FormData();
+            formData.append('jam_masuk', absensiMasuk);
+            formData.append('jam_keluar', absensiKeluar);
+            formData.append('toleransi_keterlambatan', toleransi);
+
+            try {
+                // Kirim data ke server dengan fetch API
+                const response = await fetch('/admin/pengaturan', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Cek hasil response
+                if (response.redirected) {
+                    // Jika berhasil, tampilkan notifikasi sukses
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: 'Pengaturan waktu berhasil diperbarui!'
+                    }).then(() => window.location.reload());  // Reload halaman setelah klik OK
+                } else {
+                    // Jika gagal, tampilkan notifikasi error
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'Gagal memperbarui pengaturan waktu.'
+                    });
+                }
+            } catch (err) {
+                // Jika terjadi error koneksi, tampilkan notifikasi error
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: 'Terjadi kesalahan koneksi.'
+                });
+            }
+        });
+    </script>
+</body>
+</html>

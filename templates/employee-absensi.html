@@ -1,0 +1,378 @@
+<!--
+    File: employee-absensi.html
+    Deskripsi: Template untuk halaman absensi karyawan
+
+    Halaman ini digunakan oleh karyawan untuk melakukan absensi masuk dan keluar.
+    Fitur utama:
+    - Menampilkan jam dan tanggal real-time
+    - Menampilkan lokasi karyawan dengan peta
+    - Tombol untuk absen masuk dan absen keluar
+    - Notifikasi sukses setelah login atau absen
+
+    Endpoint terkait:
+    - GET /employee-absensi: Menampilkan halaman absensi karyawan
+    - GET /absen-masuk-webcam: Halaman untuk absen masuk
+    - GET /absen-keluar-webcam: Halaman untuk absen keluar
+    - GET /employee-logout: Logout dari sistem
+
+    Data yang dibutuhkan dari backend:
+    - nama: Nama karyawan
+    - notif_login: Notifikasi setelah login berhasil
+    - notif_absen: Notifikasi setelah absen berhasil
+    - request.query_params.get('id'): ID karyawan dari URL
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Karyawan</title>
+    <style>
+        /* Reset CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Pengaturan dasar untuk body */
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .navbar {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+
+        .url-bar {
+            flex-grow: 1;
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+        }
+
+        .welcome-text {
+            font-size: 2.5em;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .menu-text {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .menu-options {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        /* Media queries untuk responsivitas */
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+                padding: 15px;
+                margin: 15px auto;
+            }
+            .welcome-text {
+                font-size: 2em;
+            }
+            .header-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .welcome-center {
+                position: static;
+                margin-bottom: 10px;
+            }
+            .time-container {
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 95%;
+                padding: 10px;
+                margin: 10px auto;
+            }
+            .welcome-text {
+                font-size: 1.8em;
+            }
+            .menu-options {
+                gap: 20px;
+            }
+            .menu-icon {
+                font-size: 30px;
+            }
+        }
+
+        .menu-option {
+            text-decoration: none;
+            color: #333;
+            text-align: center;
+        }
+
+        .menu-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 200px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .welcome-center {
+            position: absolute;
+            left: 0;
+            right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        .time-container {
+            flex: 1;
+            text-align: right;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+
+    <!-- Container utama -->
+    <div class="container" style="position: relative;">
+        <!-- Header dengan tombol logout, judul, dan jam -->
+        <div class="header-container">
+            <!-- Tombol logout dengan ikon -->
+            <a href="/employee-logout" title="Logout" class="menu-option" style="color: #dc3545; font-size: 22px; display: flex; align-items: center; gap: 6px; text-decoration: none;">
+                <span style="vertical-align: middle;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M6 2a2 2 0 0 0-2 2v2a.5.5 0 0 0 1 0V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2a.5.5 0 0 0-1 0v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H6z"/>
+                        <path d="M.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L1.707 7.5H9.5a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z"/>
+                    </svg>
+                </span>
+                Logout
+            </a>
+
+            <!-- Judul selamat datang di tengah -->
+            <div class="welcome-center">
+                <h1 class="welcome-text">Selamat Datang</h1>
+            </div>
+
+            <!-- Container untuk jam dan tanggal -->
+            <div class="time-container">
+                <!-- Jam real-time (diupdate oleh JavaScript) -->
+                <div id="jam" style="font-size: 1.2em; font-weight: bold;"></div>
+                <!-- Hari dan tanggal real-time (diupdate oleh JavaScript) -->
+                <div id="hari-tanggal" style="font-size: 1em;"></div>
+            </div>
+        </div>
+
+        <!-- Tampilkan nama karyawan jika tersedia -->
+        {% if nama %}
+            <div style="font-size: 22px; color: #000000; font-weight: bold; margin: 15px 0; text-align: center; text-transform: uppercase;">{{ nama }}</div>
+        {% endif %}
+
+        <!-- Instruksi untuk karyawan -->
+        <p class="menu-text">Silakan pilih menu kehadiran dibawah ini</p>
+
+        <!-- Menu opsi absensi -->
+        <div class="menu-options">
+            <!-- Tombol absen masuk -->
+            <a href="/absen-masuk-webcam?id={{ request.query_params.get('id') }}" class="menu-option" style="background:none; border:none; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="menu-icon">⏰</div>
+                <div>Absen Masuk</div>
+            </a>
+
+            <!-- Tombol absen keluar -->
+            <a href="/absen-keluar-webcam?id={{ request.query_params.get('id') }}" class="menu-option">
+                <div class="menu-icon">🏃</div>
+                <div>Absen Keluar</div>
+            </a>
+        </div>
+
+        <!-- Informasi lokasi karyawan -->
+        <div id="absen-info" style="margin-bottom: 20px;">
+            <!-- Koordinat lokasi (diisi oleh JavaScript) -->
+            <div id="lokasi" style="font-size: 1.1em; color: #007bff;"></div>
+        </div>
+
+        <!-- Peta lokasi karyawan (diisi oleh JavaScript) -->
+        <div id="map" style="width: 100%; height: 140px; border-radius: 8px; margin-bottom: 16px;"></div>
+    </div>
+
+    <div style="display:none;">Debug: notif_absen = {{ notif_absen }}</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {% if notif_login %}
+    <script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil Login',
+        text: '{{ notif_login }}',
+        timer: 2000,
+        showConfirmButton: false
+    });
+    </script>
+    {% endif %}
+
+    {% if notif_absen %}
+    <script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Absen Berhasil',
+        text: '{{ notif_absen }}',
+        timer: 2000,
+        showConfirmButton: false
+    });
+    </script>
+    {% endif %}
+
+    <!-- Script JavaScript untuk fungsionalitas halaman -->
+    <script>
+    /**
+     * Fungsi untuk mengupdate jam dan tanggal secara real-time
+     * Dijalankan setiap detik untuk menampilkan waktu saat ini
+     */
+    function updateWaktuHari() {
+        const waktu = new Date();  // Objek Date untuk waktu saat ini
+        const hariList = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];  // Nama-nama hari
+
+        // Update elemen jam dengan waktu saat ini
+        document.getElementById('jam').innerText = waktu.toLocaleTimeString();
+
+        // Update elemen hari-tanggal dengan hari dan tanggal saat ini
+        document.getElementById('hari-tanggal').innerText = hariList[waktu.getDay()] + ', ' + waktu.toLocaleDateString();
+    }
+
+    // Jalankan updateWaktuHari setiap 1 detik
+    setInterval(updateWaktuHari, 1000);
+
+    // Jalankan updateWaktuHari saat halaman dimuat
+    updateWaktuHari();
+
+    // Variabel untuk menyimpan objek peta dan marker
+    let map, marker;
+
+    /**
+     * Fungsi untuk menampilkan peta dengan lokasi karyawan
+     *
+     * @param {number} lat - Latitude lokasi
+     * @param {number} lon - Longitude lokasi
+     */
+    function showMap(lat, lon) {
+        if (!map) {
+            // Jika peta belum dibuat, buat peta baru
+            map = L.map('map').setView([lat, lon], 8);
+
+            // Tambahkan layer peta dari OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Tambahkan marker pada lokasi karyawan
+            marker = L.marker([lat, lon]).addTo(map);
+        } else {
+            // Jika peta sudah ada, update view dan posisi marker
+            map.setView([lat, lon], 8);
+            marker.setLatLng([lat, lon]);
+        }
+    }
+
+    /**
+     * Fungsi untuk mendapatkan lokasi karyawan
+     * Menggunakan Geolocation API browser
+     */
+    function getLocation() {
+        if (navigator.geolocation) {
+            // Jika browser mendukung geolocation
+            navigator.geolocation.getCurrentPosition(function(position) {
+                // Callback sukses - dapatkan koordinat
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                // Tampilkan koordinat di elemen lokasi
+                document.getElementById('lokasi').innerText =
+                    'Lat: ' + lat.toFixed(5) +
+                    ', Lon: ' + lon.toFixed(5);
+
+                // Tampilkan peta dengan lokasi karyawan
+                showMap(lat, lon);
+            }, function() {
+                // Callback error - lokasi tidak tersedia
+                document.getElementById('lokasi').innerText = 'Lokasi tidak tersedia';
+            });
+        } else {
+            // Browser tidak mendukung geolocation
+            document.getElementById('lokasi').innerText = 'Geolocation tidak didukung browser';
+        }
+    }
+
+    // Jalankan getLocation saat halaman selesai dimuat
+    document.addEventListener('DOMContentLoaded', getLocation);
+
+    // Event handler untuk form absen masuk
+    // Saat submit absen, ambil jam & hari dari tampilan
+    if (document.getElementById('absenMasukForm')) {
+        document.getElementById('absenMasukForm').onsubmit = function() {
+            document.getElementById('inputWaktu').value = document.getElementById('jam').innerText;
+            document.getElementById('inputHari').value = document.getElementById('hari-tanggal').innerText;
+        };
+    }
+    </script>
+</body>
+</html>

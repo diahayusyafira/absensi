@@ -1,0 +1,1055 @@
+<!--
+    File: admin-laporanabsensi.html
+    Deskripsi: Template untuk halaman laporan absensi karyawan
+
+    Halaman ini digunakan oleh admin untuk melihat dan mengelola laporan absensi karyawan, termasuk:
+    - Melihat daftar absensi semua karyawan
+    - Memfilter absensi berdasarkan tanggal dan karyawan
+    - Mencetak laporan absensi
+    - Menghapus data absensi
+
+    Endpoint terkait:
+    - GET /admin/laporanabsensi: Menampilkan halaman laporan absensi
+    - DELETE /admin/absensi/{id}: Menghapus data absensi
+
+    Data yang dibutuhkan dari backend:
+    - absensi_list: Daftar semua data absensi
+    - karyawan_list: Daftar semua karyawan untuk filter
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Absensi - PT Matura Jaya</title>
+    <!-- Import Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Import Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Import DataTables CSS untuk tabel interaktif -->
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Import DataTables Fixed Header CSS -->
+    <link href="https://cdn.datatables.net/fixedheader/3.2.2/css/fixedHeader.bootstrap5.min.css" rel="stylesheet">
+    <!-- Import DataTables Fixed Columns CSS -->
+    <link href="https://cdn.datatables.net/fixedcolumns/4.0.2/css/fixedColumns.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        /* Reset CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        /* Pengaturan dasar untuk body */
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            padding: 25px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            height: 100vh;
+            position: fixed;
+            color: white;
+        }
+
+        .admin-label {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            backdrop-filter: blur(5px);
+        }
+
+        .menu-list {
+            list-style: none;
+        }
+
+        .menu-item {
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 25px;
+            margin-left: 280px;
+            background-color: #f4f6f9;
+            width: calc(100% - 280px);
+            overflow-x: hidden;
+        }
+
+        .welcome-header {
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+        .welcome-header h1 {
+            font-size: 20px;
+            margin-bottom: 5px;
+            color: white;
+        }
+
+        .welcome-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        /* FILTER CARD */
+        .filter-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        .filter-card input,
+        .filter-card select {
+            min-width: 130px;
+            font-size: 0.85em;
+        }
+        .filter-card button {
+            min-width: 80px;
+            font-weight: 500;
+            font-size: 0.85em;
+            padding: 5px 10px;
+        }
+
+        /* TABEL ABSENSI CUSTOM */
+        .absensi-table-custom {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 6px 24px rgba(52,152,219,0.08);
+            padding: 22px 24px;
+            margin-top: 20px;
+        }
+        .absensi-table-custom thead th {
+            background: linear-gradient(90deg, #667eea 0%, #3498db 100%) !important;
+            color: #fff;
+            font-size: 1.08em;
+            font-weight: 700;
+            border: none;
+            letter-spacing: 0.5px;
+        }
+        .absensi-table-custom tbody tr {
+            transition: box-shadow 0.2s, background 0.2s;
+        }
+        .absensi-table-custom tbody tr:hover {
+            background: #f0f6ff;
+            box-shadow: 0 2px 12px rgba(52,152,219,0.07);
+        }
+        .absensi-table-custom td, .absensi-table-custom th {
+            vertical-align: middle;
+            padding: 0.85rem 0.7rem;
+        }
+        .absensi-avatar {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2.5px solid #667eea;
+            box-shadow: 0 0 0 3px #eaf3fb;
+            background: #eaf3fb;
+        }
+        .absensi-avatar-default {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #bfc9d1 0%, #eaf3fb 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 22px;
+        }
+        .badge-masuk {
+            background: #e8f9f1;
+            color: #1abc9c;
+            font-weight: 600;
+            border-radius: 4px;
+            padding: 0.3em 0.6em;
+            font-size: 0.8em;
+            display: inline-block;
+            min-width: 70px;
+            text-align: center;
+        }
+        .badge-keluar {
+            background: #ffeaea;
+            color: #e74c3c;
+            font-weight: 600;
+            border-radius: 4px;
+            padding: 0.3em 0.6em;
+            font-size: 0.8em;
+            display: inline-block;
+            min-width: 70px;
+            text-align: center;
+        }
+        .badge-lokasi {
+            background: #eaf3fb;
+            color: #2980b9;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 0.4em 0.9em;
+            font-size: 1em;
+        }
+        .btn-aksi {
+            font-size: 0.98em;
+            padding: 0.38em 1.1em;
+            border-radius: 7px;
+            margin-right: 4px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .btn-aksi.cetak {
+            background: #eaf3fb;
+            color: #2980b9;
+            border: none;
+        }
+        .btn-aksi.cetak:hover {
+            background: #3498db;
+            color: #fff;
+        }
+        .btn-aksi.hapus {
+            background: #ffeaea;
+            color: #e74c3c;
+            border: none;
+        }
+        .btn-aksi.hapus:hover {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        /* Style untuk tombol hapus */
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+            transform: scale(1.05);
+        }
+        .absensi-empty {
+            text-align: center;
+            color: #bfc9d1;
+            padding: 40px 0 30px 0;
+        }
+        .absensi-empty i {
+            font-size: 48px;
+            margin-bottom: 10px;
+            color: #eaf3fb;
+        }
+        @media (max-width: 900px) {
+            .content {
+                padding: 10px;
+            }
+            .filter-card {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 12px 8px;
+            }
+            .absensi-table-custom {
+                padding: 8px 2px;
+            }
+        }
+        .data-table-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-top: 30px;
+            overflow-x: hidden;
+            max-width: 100%;
+            min-height: 500px; /* Ensure consistent height even with few records */
+        }
+
+        /* Style for empty rows to maintain consistent table appearance */
+        .dataTables_empty {
+            background-color: #f9f9f9;
+            padding: 20px !important;
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* Style for print buttons */
+        .btn-print-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-print-group .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .btn-print-group .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .table-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0;
+        }
+        /* Avatar styling */
+        .avatar-sm {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .avatar-empty {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #bfc9d1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+        }
+        .table-responsive {
+            height: 300px; /* Fixed height to show approximately 4 records */
+            overflow-y: auto;
+            overflow-x: auto;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        /* Pastikan tabel menggunakan lebar penuh dari container */
+        #absensiTable {
+            width: 100% !important;
+            min-width: 1000px; /* Ensure horizontal scrolling */
+            font-size: 0.9em;
+        }
+
+        /* Ensure consistent row height */
+        #absensiTable tbody tr {
+            height: 60px; /* Fixed height for each row */
+        }
+
+        /* Make sure all cells are visible */
+        #absensiTable td {
+            white-space: normal;
+            overflow: visible;
+        }
+
+        /* Style for table rows */
+        #absensiTable tbody tr:nth-child(even):not(.empty-row) {
+            background-color: #f8f9fa;
+        }
+
+        #absensiTable tbody tr:hover:not(.empty-row) {
+            background-color: #f1f1f1;
+        }
+
+        /* Style for empty rows */
+        #absensiTable tbody tr.empty-row {
+            height: 60px;
+            background-color: #f9f9f9;
+            border-bottom: 1px solid #eee;
+        }
+
+        .table > :not(caption) > * > * {
+            padding: 0.75rem;
+        }
+        /* Custom scrollbar styling */
+        .table-responsive::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .table-responsive::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Badge styling */
+        .badge {
+            font-size: 0.85em;
+            padding: 0.35em 0.65em;
+        }
+        .absensi-empty {
+            text-align: center;
+            color: #bfc9d1;
+            padding: 40px 0 30px 0;
+        }
+        .absensi-empty i {
+            font-size: 48px;
+            margin-bottom: 10px;
+            color: #eaf3fb;
+        }
+        @media (max-width: 900px) {
+            .data-table-container {
+                padding: 10px 2px;
+            }
+            .table-header h2 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="admin-label">
+                <i class="fas fa-building"></i>
+                PT MATURA JAYA
+            </div>
+            <ul class="menu-list">
+                <li class="menu-item">
+                    <i class="fas fa-chart-line"></i>
+                    Dashboard
+                </li>
+                <li class="menu-item">
+                    <i class="fas fa-users"></i>
+                    Data Karyawan
+                </li>
+                <li class="menu-item active">
+                    <i class="fas fa-clipboard-list"></i>
+                    Laporan Absensi
+                </li>
+                <li class="menu-item">
+                    <i class="fas fa-cog"></i>
+                    Pengaturan
+                </li>
+                <li class="menu-item" style="margin-top: auto;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Keluar
+                </li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <!-- Header halaman dengan judul -->
+            <div class="welcome-header">
+                <h1>Laporan Absensi</h1>
+                <p>PT Matura Jaya - Sistem Manajemen Absensi Karyawan</p>
+            </div>
+
+            <!-- Filter section removed as requested -->
+
+            <!-- Container untuk tabel data absensi -->
+            <div class="data-table-container">
+                <!-- Header tabel dengan judul dan tombol cetak -->
+                <div class="table-header">
+                    <h2>Daftar Absensi</h2>
+                    <div class="btn-print-group">
+                        <button id="printAllBtn" class="btn btn-success">
+                            <i class="fas fa-print me-1"></i> Cetak Semua
+                        </button>
+                        <div class="btn-group">
+                            <button id="printByMonthBtn" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-calendar me-1"></i> Cetak Per Bulan
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h6 class="dropdown-header">Pilih Bulan</h6></li>
+                                <li><a class="dropdown-item print-month" data-month="1" href="#">Januari</a></li>
+                                <li><a class="dropdown-item print-month" data-month="2" href="#">Februari</a></li>
+                                <li><a class="dropdown-item print-month" data-month="3" href="#">Maret</a></li>
+                                <li><a class="dropdown-item print-month" data-month="4" href="#">April</a></li>
+                                <li><a class="dropdown-item print-month" data-month="5" href="#">Mei</a></li>
+                                <li><a class="dropdown-item print-month" data-month="6" href="#">Juni</a></li>
+                                <li><a class="dropdown-item print-month" data-month="7" href="#">Juli</a></li>
+                                <li><a class="dropdown-item print-month" data-month="8" href="#">Agustus</a></li>
+                                <li><a class="dropdown-item print-month" data-month="9" href="#">September</a></li>
+                                <li><a class="dropdown-item print-month" data-month="10" href="#">Oktober</a></li>
+                                <li><a class="dropdown-item print-month" data-month="11" href="#">November</a></li>
+                                <li><a class="dropdown-item print-month" data-month="12" href="#">Desember</a></li>
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Tabel responsif dengan scrollbar -->
+                <div class="table-responsive">
+                    <!-- Tabel absensi dengan DataTables -->
+                    <table id="absensiTable" class="table table-striped">
+                        <!-- Header tabel -->
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama</th>
+                                <th>Masuk</th>
+                                <th>Tanggal</th>
+                                <th>Keluar</th>
+                                <th>Foto Masuk</th>
+                                <th>Foto Keluar</th>
+                                <th>Lokasi Masuk</th>
+                                <th>Lokasi Keluar</th>
+                                <th>Uang Makan</th>
+                                <th>Uang Transport</th>
+                                <th>Cetak</th>
+                            </tr>
+                        </thead>
+                        <!-- Body tabel -->
+                        <tbody>
+                            <!-- Loop melalui daftar absensi jika ada -->
+                            {% if absensi_list %}
+                                {% for absensi in absensi_list %}
+                                <!-- Baris data absensi dengan atribut ID untuk operasi CRUD -->
+                                <tr data-absensi-id="{{ absensi.id }}">
+                                    <!-- Kolom nomor urut -->
+                                    <td>{{ loop.index }}</td>
+                                    <!-- Kolom nama karyawan -->
+                                    <td>{{ absensi.karyawan.nama }}</td>
+                                    <!-- Kolom jam masuk dengan format jam:menit:detik -->
+                                    <td>{{ absensi.jam_masuk.strftime('%H:%M:%S') if absensi.jam_masuk else '-' }}</td>
+                                    <!-- Kolom tanggal dengan format dd/mm/yyyy -->
+                                    <td>{{ absensi.tanggal.strftime('%d/%m/%Y') if absensi.tanggal else '-' }}</td>
+                                    <!-- Kolom jam keluar dengan format jam:menit:detik -->
+                                    <td>{{ absensi.jam_keluar.strftime('%H:%M:%S') if absensi.jam_keluar else '-' }}</td>
+
+                                    <!-- Kolom foto masuk -->
+                                    <td>
+                                        <!-- Tampilkan foto masuk jika ada -->
+                                        {% if absensi.foto_masuk %}
+                                        <img src="data:image/jpeg;base64,{{ absensi.foto_masuk|b64encode }}"
+                                             class="avatar-sm rounded-circle"
+                                             alt="Foto Masuk"
+                                             style="width: 40px; height: 40px; object-fit: cover;">
+                                        <!-- Tampilkan ikon default jika tidak ada foto -->
+                                        {% else %}
+                                        <div class="avatar-sm rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Kolom foto keluar -->
+                                    <td>
+                                        <!-- Tampilkan foto keluar jika ada -->
+                                        {% if absensi.foto_keluar %}
+                                        <img src="data:image/jpeg;base64,{{ absensi.foto_keluar|b64encode }}"
+                                             class="avatar-sm rounded-circle"
+                                             alt="Foto Keluar"
+                                             style="width: 40px; height: 40px; object-fit: cover;">
+                                        <!-- Tampilkan ikon default jika tidak ada foto -->
+                                        {% else %}
+                                        <div class="avatar-sm rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Kolom lokasi masuk -->
+                                    <td>
+                                        {{ absensi.alamat or '-' }}
+                                    </td>
+
+                                    <!-- Kolom lokasi keluar -->
+                                    <td>
+                                        {{ absensi.alamat_keluar or '-' }}
+                                    </td>
+
+                                    <!-- Kolom uang makan -->
+                                    <td>
+                                        <span class="badge {% if absensi.uang_makan %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ 'Ya' if absensi.uang_makan else 'Tidak' }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Kolom uang transportasi -->
+                                    <td>
+                                        <span class="badge {% if absensi.uang_transport %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ 'Ya' if absensi.uang_transport else 'Tidak' }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Kolom tombol aksi -->
+                                    <td>
+                                        <div class="btn-group">
+                                            <!-- Tombol cetak absensi -->
+                                            <button type="button" class="btn btn-sm btn-success print-btn" title="Cetak">
+                                                <i class="fas fa-print"></i>
+                                            </button>
+                                            <!-- Tombol hapus absensi -->
+                                            <button type="button" class="btn btn-sm btn-danger delete-btn ms-1" title="Hapus">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            <!-- Tampilkan pesan jika tidak ada data -->
+                            {% else %}
+                                <tr>
+                                    <td colspan="12" class="text-center py-4">
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Tidak ada data absensi yang ditemukan
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- Add empty rows to maintain consistent table height -->
+                                <tr class="empty-row"><td colspan="12">&nbsp;</td></tr>
+                                <tr class="empty-row"><td colspan="12">&nbsp;</td></tr>
+                                <tr class="empty-row"><td colspan="12">&nbsp;</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Import library JavaScript yang dibutuhkan -->
+            <!-- jQuery untuk manipulasi DOM dan AJAX -->
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            <!-- Bootstrap JS untuk komponen UI -->
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+            <!-- DataTables JS untuk tabel interaktif -->
+            <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+            <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+            <!-- DataTables Fixed Header extension -->
+            <script src="https://cdn.datatables.net/fixedheader/3.2.2/js/dataTables.fixedHeader.min.js"></script>
+            <!-- DataTables Fixed Columns extension -->
+            <script src="https://cdn.datatables.net/fixedcolumns/4.0.2/js/dataTables.fixedColumns.min.js"></script>
+            <!-- SweetAlert2 untuk notifikasi yang lebih menarik -->
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <!-- SheetJS untuk export ke Excel -->
+            <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+            <!-- Script JavaScript untuk inisialisasi DataTables dan event handler -->
+            <script>
+            // Tunggu sampai dokumen siap
+            $(document).ready(function() {
+                // Pastikan semua gambar dimuat sebelum menginisialisasi tabel
+                // untuk menghindari masalah layout
+                $('img').on('load', function() {
+                    $(window).trigger('resize');
+                });
+                // Inisialisasi DataTables untuk tabel absensi
+                var absensiTable = $('#absensiTable').DataTable({
+                    responsive: false,
+                    scrollX: true,
+                    scrollCollapse: true,
+                    processing: true,  // Tampilkan indikator loading
+                    // Konfigurasi bahasa Indonesia
+                    language: {
+                        search: "Cari:",
+                        lengthMenu: "Tampilkan _MENU_ data per halaman",
+                        zeroRecords: "Tidak ada data yang ditemukan",
+                        info: "Menampilkan halaman _PAGE_ dari _PAGES_",
+                        infoEmpty: "Tidak ada data yang tersedia",
+                        infoFiltered: "(difilter dari _MAX_ total data)",
+                        paginate: {
+                            first: "Pertama",
+                            last: "Terakhir",
+                            next: "Selanjutnya",
+                            previous: "Sebelumnya"
+                        },
+                        processing: "Memuat data..."
+                    },
+                    // Konfigurasi layout tabel
+                    dom: '<"row"<"col-md-6"l><"col-md-6"f>><"row"<"col-12"t>><"row"<"col-md-6"i><"col-md-6"p>>',
+                    pageLength: 4, // Show 4 records per page
+                    lengthMenu: [4, 10, 25, 50], // Options for records per page
+                    order: [[0, "asc"]],
+                    columnDefs: [
+                        { width: "50px", targets: 0 },  // No
+                        { width: "150px", targets: 1 }, // Nama
+                        { width: "80px", targets: 2 },  // Jam Masuk
+                        { width: "100px", targets: 3 }, // Tanggal
+                        { width: "80px", targets: 4 },  // Jam Keluar
+                        { width: "80px", targets: 5 },  // Foto Masuk
+                        { width: "80px", targets: 6 },  // Foto Keluar
+                        { width: "200px", targets: 7 }, // Lokasi Masuk
+                        { width: "200px", targets: 8 }, // Lokasi Keluar
+                        { width: "80px", targets: 9 },  // Uang Makan
+                        { width: "80px", targets: 10 }, // Uang Transport
+                        { width: "80px", targets: 11 }  // Cetak
+                    ],
+                    drawCallback: function(settings) {
+                        console.log("Table redrawn, number of rows:", this.api().rows().count());
+                        // Adjust columns on each draw
+                        this.api().columns.adjust();
+
+                        // If we have fewer than 4 rows, add empty rows to maintain height
+                        const visibleRows = this.api().rows({page:'current'}).nodes().length;
+                        if (visibleRows > 0 && visibleRows < 4) {
+                            const emptyRowsNeeded = 4 - visibleRows;
+                            const tbody = $(this).find('tbody');
+
+                            // Remove any existing empty rows first
+                            tbody.find('tr.dynamic-empty-row').remove();
+
+                            // Add new empty rows
+                            for (let i = 0; i < emptyRowsNeeded; i++) {
+                                tbody.append('<tr class="dynamic-empty-row empty-row"><td colspan="12">&nbsp;</td></tr>');
+                            }
+                        }
+                    }
+                });
+
+                // Log initial data
+                console.log("Initial number of rows:", absensiTable.rows().count());
+
+                // Handle window resize to adjust table
+                $(window).on('resize', function() {
+                    if (absensiTable) {
+                        absensiTable.columns.adjust().draw();
+                    }
+                });
+
+                // Adjust columns on initial load
+                setTimeout(function() {
+                    absensiTable.columns.adjust().draw();
+                }, 200);
+
+                // Function to generate Excel file
+                function printAbsensi(data, title) {
+                    // Prepare data for Excel
+                    const excelData = [
+                        // Header row with company info
+                        ['PT MATURA JAYA'],
+                        ['Laporan Absensi Karyawan'],
+                        [title],
+                        ['Dicetak pada: ' + new Date().toLocaleString()],
+                        [''], // Empty row for spacing
+
+                        // Table header
+                        ['No', 'Nama', 'Tanggal', 'Jam Masuk', 'Jam Keluar', 'Lokasi Masuk', 'Lokasi Keluar', 'Uang Makan', 'Uang Transport']
+                    ];
+
+                    // Add data rows
+                    data.forEach((item, index) => {
+                        excelData.push([
+                            index + 1,
+                            item.nama,
+                            item.tanggal,
+                            item.jamMasuk,
+                            item.jamKeluar,
+                            item.lokasiMasuk,
+                            item.lokasiKeluar,
+                            item.uangMakan,
+                            item.uangTransport
+                        ]);
+                    });
+
+                    // Add footer rows
+                    excelData.push(
+                        [''], // Empty row for spacing
+                        ['Mengetahui,'],
+                        ['Manager HRD'],
+                        [''],
+                        [''],
+                        ['_________________']
+                    );
+
+                    // Create workbook and worksheet
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+                    // Set column widths
+                    const colWidths = [
+                        { wch: 5 },  // No
+                        { wch: 20 }, // Nama
+                        { wch: 12 }, // Tanggal
+                        { wch: 12 }, // Jam Masuk
+                        { wch: 12 }, // Jam Keluar
+                        { wch: 30 }, // Lokasi Masuk
+                        { wch: 30 }, // Lokasi Keluar
+                        { wch: 12 }, // Uang Makan
+                        { wch: 12 }  // Uang Transport
+                    ];
+                    ws['!cols'] = colWidths;
+
+                    // Add worksheet to workbook
+                    XLSX.utils.book_append_sheet(wb, ws, 'Laporan Absensi');
+
+                    // Generate Excel file and trigger download
+                    const fileName = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.xlsx';
+                    XLSX.writeFile(wb, fileName);
+
+                    // Show success notification
+                    Swal.fire({
+                        title: 'Berhasil',
+                        text: 'File Excel berhasil diunduh',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    });
+                }
+
+                // Function to extract data from table for printing
+                function getTableData(filter = null) {
+                    const data = [];
+
+                    // Get all visible rows from the DataTable
+                    const rows = absensiTable.rows({ search: 'applied' }).nodes();
+
+                    // Loop through each row and extract data
+                    $(rows).each(function() {
+                        const $row = $(this);
+                        const id = $row.data('absensi-id');
+
+                        // Skip if we have a filter and this row doesn't match
+                        if (filter && !filter($row, id)) {
+                            return;
+                        }
+
+                        // Extract data from the row
+                        const nama = $row.find('td').eq(1).text().trim();
+                        const jamMasuk = $row.find('td').eq(2).text().trim();
+                        const tanggal = $row.find('td').eq(3).text().trim();
+                        const jamKeluar = $row.find('td').eq(4).text().trim();
+                        const lokasiMasuk = $row.find('td').eq(7).text().trim();
+                        const lokasiKeluar = $row.find('td').eq(8).text().trim();
+                        const uangMakan = $row.find('td').eq(9).text().trim();
+                        const uangTransport = $row.find('td').eq(10).text().trim();
+
+                        // Add to data array
+                        data.push({
+                            id,
+                            nama,
+                            tanggal,
+                            jamMasuk,
+                            jamKeluar,
+                            lokasiMasuk,
+                            lokasiKeluar,
+                            uangMakan,
+                            uangTransport
+                        });
+                    });
+
+                    return data;
+                }
+
+                // Handle individual print button clicks (using event delegation)
+                $('#absensiTable').on('click', '.print-btn', function() {
+                    const id = $(this).closest('tr').data('absensi-id');
+                    const nama = $(this).closest('tr').find('td').eq(1).text().trim();
+                    console.log("Print absensi ID:", id);
+
+                    // Get data for this specific row
+                    const data = getTableData(function($row, rowId) {
+                        return rowId === id;
+                    });
+
+                    // Print the data
+                    if (data.length > 0) {
+                        printAbsensi(data, `Laporan Absensi - ${nama}`);
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Data tidak ditemukan',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
+
+                // Handle print all button
+                $('#printAllBtn').click(function() {
+                    // Get all data
+                    const data = getTableData();
+
+                    // Print the data
+                    if (data.length > 0) {
+                        printAbsensi(data, 'Laporan Absensi - Semua Karyawan');
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Tidak ada data untuk dicetak',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
+
+                // Handle print by month
+                $('.print-month').click(function(e) {
+                    e.preventDefault();
+                    const month = $(this).data('month');
+                    const monthNames = [
+                        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                    ];
+
+                    // Filter data by month
+                    const data = getTableData(function($row) {
+                        const tanggal = $row.find('td').eq(3).text().trim();
+                        // Extract month from dd/mm/yyyy format
+                        const parts = tanggal.split('/');
+                        if (parts.length === 3) {
+                            const rowMonth = parseInt(parts[1], 10);
+                            return rowMonth === month;
+                        }
+                        return false;
+                    });
+
+                    // Print the data
+                    if (data.length > 0) {
+                        printAbsensi(data, `Laporan Absensi - Bulan ${monthNames[month-1]}`);
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: `Tidak ada data untuk bulan ${monthNames[month-1]}`,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
+
+
+
+                // Handle delete button clicks (using event delegation for dynamically added elements)
+                $('#absensiTable').on('click', '.delete-btn', function() {
+                    const $row = $(this).closest('tr');
+                    const id = $row.data('absensi-id');
+                    const nama = $row.find('td').eq(1).text().trim();
+                    const tanggal = $row.find('td').eq(3).text().trim();
+
+                    // Tampilkan konfirmasi sebelum menghapus
+                    Swal.fire({
+                        title: 'Konfirmasi Hapus',
+                        html: `Anda yakin ingin menghapus data absensi:<br>
+                              <strong>${nama}</strong> pada tanggal <strong>${tanggal}</strong>?<br><br>
+                              <span class="text-danger">Perhatian: Tindakan ini tidak dapat dibatalkan!</span>`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Ya, Hapus!',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Kirim permintaan DELETE ke server
+                            $.ajax({
+                                url: `/admin/absensi/${id}`,
+                                type: 'DELETE',
+                                success: function(response) {
+                                    // Hapus baris dari tabel
+                                    absensiTable.row($row).remove().draw();
+
+                                    // Tampilkan notifikasi sukses
+                                    Swal.fire(
+                                        'Terhapus!',
+                                        'Data absensi berhasil dihapus.',
+                                        'success'
+                                    );
+                                },
+                                error: function(xhr, status, error) {
+                                    // Tampilkan pesan error
+                                    let errorMessage = 'Terjadi kesalahan saat menghapus data.';
+                                    if (xhr.responseJSON && xhr.responseJSON.detail) {
+                                        errorMessage = xhr.responseJSON.detail;
+                                    }
+
+                                    Swal.fire(
+                                        'Error!',
+                                        errorMessage,
+                                        'error'
+                                    );
+                                }
+                            });
+                        }
+                    });
+                });
+            });
+            </script>
+        </div>
+    </div>
+
+    <!-- Script JavaScript untuk navigasi menu -->
+    <script>
+        /**
+         * Event handler untuk menu navigasi
+         * Mengarahkan ke halaman yang sesuai saat menu diklik
+         */
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Ambil teks menu yang diklik
+                const menuText = this.textContent.trim();
+                // Arahkan ke URL yang sesuai berdasarkan menu yang diklik
+                switch(menuText) {
+                    case 'Dashboard':
+                        window.location.href = '/admin/dashboard';
+                        break;
+                    case 'Data Karyawan':
+                        window.location.href = '/admin/datakaryawan';
+                        break;
+                    case 'Laporan Absensi':
+                        window.location.href = '/admin/laporanabsensi';
+                        break;
+                    case 'Pengaturan':
+                        window.location.href = '/admin/pengaturan';
+                        break;
+                    case 'Keluar':
+                        window.location.href = '/admin/logout';
+                        break;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

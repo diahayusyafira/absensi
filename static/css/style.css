@@ -1,0 +1,237 @@
+/**
+ * @file style.css
+ * @description File CSS utama untuk aplikasi absensi karyawan.
+ *              Berisi gaya untuk layout, form, tombol, tabel, dan komponen UI lainnya.
+ * @author PT Matura Jaya
+ * @version 1.0.0
+ */
+
+/**
+ * ===================================
+ * GAYA DASAR DAN LAYOUT
+ * ===================================
+ */
+
+/**
+ * Gaya untuk elemen body
+ * - Menggunakan font sans-serif untuk keterbacaan yang baik
+ * - Menghilangkan margin dan padding default
+ * - Mengatur warna latar belakang abu-abu muda
+ * - Menggunakan flexbox untuk memusatkan konten secara vertikal dan horizontal
+ * - Memastikan tinggi minimal 100% dari viewport
+ */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5; /* Warna latar belakang abu-abu muda */
+    display: flex;
+    justify-content: center; /* Memusatkan konten secara horizontal */
+    align-items: center;     /* Memusatkan konten secara vertikal */
+    min-height: 100vh;       /* Tinggi minimal 100% dari viewport */
+}
+
+/**
+ * Container utama untuk membatasi lebar konten
+ * - Lebar maksimal 1200px untuk tampilan yang optimal
+ * - Margin otomatis untuk memusatkan container
+ * - Padding 20px untuk memberikan ruang di sekitar konten
+ */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/**
+ * ===================================
+ * GAYA FORM LOGIN
+ * ===================================
+ */
+
+/**
+ * Gaya untuk form login
+ * - Latar belakang putih untuk kontras dengan background halaman
+ * - Padding 30px untuk ruang internal yang cukup
+ * - Border radius 8px untuk sudut yang lebih lembut
+ * - Box shadow untuk efek elevasi
+ * - Lebar 100% dengan maksimal 400px
+ */
+.login-form {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Bayangan halus */
+    width: 100%;
+    max-width: 400px;
+}
+
+/**
+ * Gaya untuk judul form login
+ * - Teks rata tengah
+ * - Margin bawah 30px untuk jarak dengan elemen berikutnya
+ * - Warna teks abu-abu gelap
+ */
+.login-form h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+/**
+ * ===================================
+ * GAYA FORM UMUM
+ * ===================================
+ */
+
+/**
+ * Gaya untuk grup form (label + input)
+ * - Margin bawah 20px untuk jarak antar grup form
+ */
+.form-group {
+    margin-bottom: 20px;
+}
+
+/**
+ * Gaya untuk label form
+ * - Display block untuk memastikan label berada di atas input
+ * - Margin bawah 5px untuk jarak dengan input
+ * - Warna teks abu-abu
+ */
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+/**
+ * Gaya untuk input form
+ * - Lebar 100% untuk mengisi container
+ * - Padding 10px untuk ruang internal yang cukup
+ * - Border tipis dengan warna abu-abu muda
+ * - Border radius 4px untuk sudut yang lebih lembut
+ * - Font size 16px untuk keterbacaan yang baik
+ */
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+/**
+ * Gaya untuk input form saat fokus
+ * - Menghilangkan outline default browser
+ * - Mengubah warna border menjadi biru
+ * - Menambahkan box shadow untuk efek fokus
+ */
+.form-control:focus {
+    outline: none;
+    border-color: #007bff; /* Warna biru */
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); /* Bayangan biru transparan */
+}
+
+/**
+ * ===================================
+ * GAYA TOMBOL
+ * ===================================
+ */
+
+/**
+ * Gaya dasar untuk semua tombol
+ * - Padding yang cukup untuk area klik yang nyaman
+ * - Tanpa border
+ * - Border radius 4px untuk sudut yang lebih lembut
+ * - Cursor pointer untuk menunjukkan elemen dapat diklik
+ * - Font size 16px untuk keterbacaan yang baik
+ * - Lebar 100% untuk mengisi container
+ */
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+}
+
+/**
+ * Gaya untuk tombol primary (utama)
+ * - Warna latar belakang biru
+ * - Warna teks putih untuk kontras
+ */
+.btn-primary {
+    background-color: #007bff; /* Warna biru */
+    color: white;
+}
+
+/**
+ * Gaya untuk tombol primary saat hover
+ * - Warna latar belakang biru yang lebih gelap
+ */
+.btn-primary:hover {
+    background-color: #0056b3; /* Warna biru lebih gelap */
+}
+
+/**
+ * ===================================
+ * GAYA ALERT DAN NOTIFIKASI
+ * ===================================
+ */
+
+/**
+ * Gaya dasar untuk alert
+ * - Padding yang cukup untuk konten
+ * - Margin bawah untuk jarak dengan elemen berikutnya
+ * - Border radius 4px untuk sudut yang lebih lembut
+ */
+.alert {
+    padding: 12px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+/**
+ * Gaya untuk alert danger (pesan error)
+ * - Warna latar belakang merah muda
+ * - Border merah muda yang lebih gelap
+ * - Warna teks merah gelap
+ */
+.alert-danger {
+    background-color: #f8d7da; /* Warna merah muda */
+    border: 1px solid #f5c6cb; /* Border merah muda lebih gelap */
+    color: #721c24; /* Teks merah gelap */
+}
+
+/**
+ * ===================================
+ * GAYA TABEL
+ * ===================================
+ */
+
+/**
+ * Gaya dasar untuk tabel
+ * - Lebar 100% untuk mengisi container
+ * - Border collapse untuk menghilangkan jarak antar sel
+ * - Margin atas dan bawah untuk jarak dengan elemen lain
+ * - Latar belakang putih untuk kontras
+ */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    background: white;
+}
+
+/**
+ * Gaya untuk sel header dan data tabel
+ * - Padding yang cukup untuk konten
+ * - Teks rata kiri
+ * - Border bawah tipis untuk memisahkan baris
+ */
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd; /* Border abu-abu muda */
+}

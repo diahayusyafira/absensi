@@ -1,0 +1,332 @@
+<!--
+    File: absen-keluar-webcam.html
+    Deskripsi: Template untuk halaman absen keluar karyawan menggunakan webcam
+
+    Halaman ini digunakan oleh karyawan untuk melakukan absensi keluar dengan:
+    - Mengambil foto wajah melalui webcam
+    - Mendapatkan lokasi karyawan secara otomatis
+    - Mencatat waktu absensi keluar
+
+    Endpoint terkait:
+    - GET /absen-keluar-webcam: Menampilkan halaman absen keluar
+    - POST /absen-keluar-webcam: Memproses data absensi keluar
+
+    Data yang dibutuhkan dari backend:
+    - id: ID karyawan
+    - nama: Nama karyawan
+    - notif_absen: Notifikasi sukses setelah absen
+    - notif_gagal: Notifikasi gagal jika absen gagal
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absen Keluar Webcam</title>
+    <style>
+        /* Pengaturan dasar untuk body */
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        /* Container utama */
+        .container {
+            width: 95%;
+            max-width: 700px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            text-align: center;
+        }
+        /* Styling untuk video dan canvas */
+        video, canvas {
+            border-radius: 8px;
+            max-width: 100%;
+            height: auto;
+        }
+        /* Styling untuk preview foto */
+        #preview {
+            margin-top: 10px;
+            max-width: 100%;
+        }
+        /* Styling untuk tombol */
+        button {
+            margin: 10px 4px;
+            padding: 8px 18px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        /* Media queries untuk responsivitas */
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+                padding: 15px;
+                margin: 10px auto;
+            }
+            button {
+                padding: 10px 15px;
+                width: 45%;
+                margin: 5px;
+            }
+        }
+        @media (max-width: 480px) {
+            .container {
+                width: 95%;
+                padding: 10px;
+            }
+            h2 {
+                font-size: 1.5em;
+            }
+            button {
+                width: 80%;
+                margin: 5px auto;
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Container utama -->
+<div class="container">
+    <!-- Judul halaman -->
+    <h2>Absen Keluar (Webcam)</h2>
+
+    <!-- Element video untuk menampilkan feed webcam -->
+    <video id="video" width="640" height="480" autoplay></video>
+
+    <!-- Canvas untuk mengambil gambar dari video (tersembunyi) -->
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+
+    <!-- Tombol untuk mengambil dan mengulang foto -->
+    <div>
+        <button id="capture">Ambil Foto</button>
+        <button id="ulang" style="display:none;">Ulangi</button>
+    </div>
+
+    <!-- Preview foto yang diambil (tersembunyi sampai foto diambil) -->
+    <img id="preview" style="display:none; width:160px; border:1px solid #ccc; margin-top:10px;">
+
+    <!-- Tampilkan alamat/lokasi karyawan (diisi oleh JavaScript) -->
+    <div id="alamat" style="margin:10px 0; color:#007bff;"></div>
+
+    <!-- Tampilkan nama karyawan -->
+    <div style="color:rgb(3, 0, 0);">NAMA: {{ nama }}</div>
+
+    <!-- Form untuk mengirim data absensi keluar -->
+    <form id="absenKeluarForm" method="POST" action="/absen-keluar-webcam" enctype="multipart/form-data">
+        <!-- Input tersembunyi untuk ID karyawan -->
+        <input type="hidden" name="id" id="inputId" value="{{ id }}">
+        <!-- Input tersembunyi untuk waktu absen (diisi oleh JavaScript) -->
+        <input type="hidden" name="waktu" id="inputWaktu">
+        <!-- Input tersembunyi untuk alamat/lokasi (diisi oleh JavaScript) -->
+        <input type="hidden" name="alamat" id="inputAlamat">
+        <!-- Input tersembunyi untuk data gambar (diisi oleh JavaScript) -->
+        <input type="hidden" name="imageData" id="imageData">
+
+        <!-- Opsi untuk uang makan dan transportasi -->
+        <div style="margin: 15px 0; text-align: left; padding: 0 20px;">
+            <div style="margin-bottom: 10px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" name="uang_makan" id="uangMakan" value="true" style="margin-right: 10px;">
+                    <span>Uang Makan</span>
+                </label>
+            </div>
+            <div>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" name="uang_transport" id="uangTransport" value="true" style="margin-right: 10px;">
+                    <span>Uang Transportasi</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Tombol submit (tersembunyi sampai foto diambil) -->
+        <button type="submit" id="submitBtn" style="display:none;">Absen Keluar</button>
+    </form>
+</div>
+<!-- Script JavaScript untuk mengakses webcam dan mengambil foto -->
+<script>
+// Ambil referensi ke elemen-elemen DOM
+const video = document.getElementById('video');  // Element video
+const canvas = document.getElementById('canvas');  // Canvas untuk mengambil gambar
+const captureBtn = document.getElementById('capture');  // Tombol ambil foto
+const ulangBtn = document.getElementById('ulang');  // Tombol ulangi foto
+const preview = document.getElementById('preview');  // Preview foto
+const imageDataInput = document.getElementById('imageData');  // Input untuk data gambar
+const submitBtn = document.getElementById('submitBtn');  // Tombol submit
+
+// Mulai feed webcam dengan konfigurasi kualitas tinggi
+navigator.mediaDevices.getUserMedia({
+    video: {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        facingMode: "user", // Kamera depan
+        frameRate: { ideal: 30 }, // Frame rate yang lebih tinggi
+    }
+}).then(stream => {
+    // Jika berhasil mendapatkan akses webcam, tampilkan video
+    video.srcObject = stream;
+}).catch(error => {
+    // Jika gagal mendapatkan akses webcam dengan konfigurasi kualitas tinggi, coba dengan konfigurasi default
+    console.error("Error accessing webcam with high quality config:", error);
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(fallbackError => {
+            console.error("Error accessing webcam with fallback config:", fallbackError);
+        });
+});
+
+/**
+ * Event handler untuk tombol ambil foto
+ * Mengambil gambar dari webcam dan menampilkan preview
+ */
+captureBtn.onclick = function(e) {
+    e.preventDefault();
+    // Ambil gambar dari video dan gambar ke canvas
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Konversi gambar canvas ke format base64
+    const dataUrl = canvas.toDataURL('image/jpeg');
+    // Tampilkan preview foto
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    // Set data gambar ke input tersembunyi
+    imageDataInput.value = dataUrl;
+    // Tampilkan tombol submit dan ulangi, sembunyikan tombol ambil foto dan video
+    submitBtn.style.display = 'inline-block';
+    ulangBtn.style.display = 'inline-block';
+    captureBtn.style.display = 'none';
+    video.style.display = 'none';
+};
+
+/**
+ * Event handler untuk tombol ulangi foto
+ * Mengembalikan tampilan ke mode webcam
+ */
+ulangBtn.onclick = function(e) {
+    e.preventDefault();
+    // Sembunyikan preview dan tombol submit/ulangi
+    preview.style.display = 'none';
+    submitBtn.style.display = 'none';
+    ulangBtn.style.display = 'none';
+    // Tampilkan kembali tombol ambil foto dan video
+    captureBtn.style.display = 'inline-block';
+    video.style.display = 'block';
+};
+
+/**
+ * Fungsi untuk mengupdate waktu secara real-time
+ * Dijalankan setiap detik untuk menampilkan waktu saat ini
+ */
+function updateWaktu() {
+    const waktu = new Date();  // Objek Date untuk waktu saat ini
+    // Set nilai input waktu
+    document.getElementById('inputWaktu').value = waktu.toLocaleTimeString();
+}
+// Jalankan updateWaktu setiap 1 detik
+setInterval(updateWaktu, 1000);
+// Jalankan updateWaktu saat halaman dimuat
+updateWaktu();
+
+/**
+ * Fungsi untuk mendapatkan lokasi dan alamat karyawan
+ * Menggunakan Geolocation API dan Nominatim API untuk reverse geocoding
+ */
+function getLocationAndAddress() {
+    if (navigator.geolocation) {
+        // Jika browser mendukung geolocation
+        navigator.geolocation.getCurrentPosition(function(position) {
+            // Callback sukses - dapatkan koordinat
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            // Gunakan Nominatim API untuk mendapatkan alamat dari koordinat
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Jika berhasil mendapatkan alamat
+                    let alamat = data.display_name || 'Alamat tidak ditemukan';
+                    // Tampilkan alamat di elemen alamat
+                    document.getElementById('alamat').innerText = alamat;
+                    // Set nilai input alamat
+                    document.getElementById('inputAlamat').value = alamat;
+                    // Aktifkan tombol submit
+                    submitBtn.disabled = false;
+                })
+                .catch(() => {
+                    // Jika gagal mendapatkan alamat
+                    document.getElementById('alamat').innerText = 'Alamat tidak ditemukan';
+                });
+        }, function() {
+            // Callback error - lokasi tidak tersedia
+            document.getElementById('alamat').innerText = 'Lokasi tidak tersedia';
+        });
+    } else {
+        // Browser tidak mendukung geolocation
+        document.getElementById('alamat').innerText = 'Geolocation tidak didukung browser';
+    }
+}
+// Jalankan getLocationAndAddress saat halaman dimuat
+getLocationAndAddress();
+
+/**
+ * Event handler untuk validasi form sebelum submit
+ * Memastikan semua data yang diperlukan sudah terisi
+ */
+submitBtn.onclick = function(e) {
+    // Cek apakah semua data yang diperlukan sudah terisi
+    if (!imageDataInput.value || !inputId.value || !inputWaktu.value || !inputAlamat.value) {
+        // Jika ada data yang belum terisi, tampilkan pesan error
+        alert('Pastikan semua data sudah terisi sebelum absen!');
+        e.preventDefault();
+        return false;
+    }
+};
+</script>
+<!-- Notifikasi sukses jika absen berhasil -->
+{% if notif_absen %}
+<!-- Import library SweetAlert2 untuk notifikasi yang lebih menarik -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// Tampilkan notifikasi sukses
+Swal.fire({
+    icon: 'success',  // Ikon sukses
+    title: 'Berhasil',  // Judul notifikasi
+    text: '{{ notif_absen }}',  // Pesan notifikasi dari backend
+    timer: 2000,  // Otomatis hilang setelah 2 detik
+    showConfirmButton: false  // Tidak menampilkan tombol konfirmasi
+});
+</script>
+{% endif %}
+
+<!-- Notifikasi error jika absen gagal -->
+{% if notif_gagal %}
+<!-- Import library SweetAlert2 untuk notifikasi yang lebih menarik -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Tunggu sampai DOM selesai dimuat
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tampilkan notifikasi error
+        Swal.fire({
+            icon: 'error',  // Ikon error
+            title: 'Gagal',  // Judul notifikasi
+            text: '{{ notif_gagal }}',  // Pesan error dari backend
+            timer: 2000,  // Otomatis hilang setelah 2 detik
+            showConfirmButton: false  // Tidak menampilkan tombol konfirmasi
+        });
+    });
+</script>
+{% endif %}
+</body>
+</html>

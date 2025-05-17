@@ -1,0 +1,469 @@
+<!--
+    File: admin-dashboard.html
+    Deskripsi: Template untuk halaman dashboard admin
+
+    Halaman ini menampilkan ringkasan data absensi karyawan hari ini, termasuk:
+    - Total karyawan
+    - Jumlah karyawan yang hadir
+    - Jumlah karyawan yang terlambat
+    - Jumlah karyawan yang tidak hadir
+
+    Endpoint terkait:
+    - GET /admin/dashboard: Menampilkan halaman dashboard admin
+
+    Data yang dibutuhkan dari backend:
+    - total_karyawan: Jumlah total karyawan
+    - hadir: Jumlah karyawan yang hadir hari ini
+    - terlambat: Jumlah karyawan yang terlambat hari ini
+    - tidak_hadir: Jumlah karyawan yang tidak hadir hari ini
+    - error: Pesan error jika ada
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin</title>
+    <!-- Favicon -->
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <!-- Import Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Reset CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        /* Pengaturan dasar untuk body */
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .navbar {
+            background-color: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .nav-button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px 12px;
+            color: #666;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        .url-bar {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #666;
+            background-color: #f8f9fa;
+        }
+
+        .main-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            padding: 25px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            height: 100vh;
+            position: fixed;
+            color: white;
+        }
+
+        .admin-label {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            backdrop-filter: blur(5px);
+        }
+
+        .menu-list {
+            list-style: none;
+        }
+
+        .menu-item {
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .content {
+            flex-grow: 1;
+            padding: 25px;
+            margin-left: 280px;
+            background-color: #f4f6f9;
+        }
+
+        .welcome-header {
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .welcome-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .welcome-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .stat-box h3 {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-box .icon {
+            font-size: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-box .number {
+            font-size: 32px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 10px 0;
+        }
+
+        .stat-box p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 220px;
+            }
+            .content {
+                margin-left: 220px;
+            }
+            .welcome-header {
+                padding: 20px;
+            }
+            .welcome-header h1 {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                padding: 15px;
+                overflow-x: auto;
+                min-height: auto;
+            }
+            .menu-list {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+            .menu-item {
+                white-space: nowrap;
+                margin-right: 10px;
+                margin-bottom: 0;
+                padding: 10px 15px;
+            }
+            .admin-label {
+                margin-bottom: 15px;
+                padding: 8px 15px;
+            }
+            .content {
+                margin-left: 0;
+                padding: 15px;
+            }
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            .stat-box {
+                padding: 15px;
+            }
+            .stat-box .number {
+                font-size: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            .welcome-header {
+                padding: 15px;
+            }
+            .welcome-header h1 {
+                font-size: 20px;
+            }
+            .welcome-header p {
+                font-size: 14px;
+            }
+            .stat-box h3 {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+
+    <!-- Container utama yang berisi sidebar dan konten -->
+    <div class="main-container">
+        <!-- Sidebar dengan menu navigasi -->
+        <div class="sidebar">
+            <!-- Label perusahaan -->
+            <div class="admin-label">
+                <i class="fas fa-building"></i>
+                PT MATURA JAYA
+            </div>
+
+            <!-- Menu navigasi -->
+            <ul class="menu-list">
+                <!-- Menu Dashboard (aktif) -->
+                <li class="menu-item active">
+                    <i class="fas fa-chart-line"></i>
+                    Dashboard
+                </li>
+                <!-- Menu Data Karyawan -->
+                <li class="menu-item">
+                    <i class="fas fa-users"></i>
+                    Data Karyawan
+                </li>
+                <!-- Menu Laporan Absensi -->
+                <li class="menu-item">
+                    <i class="fas fa-clipboard-list"></i>
+                    Laporan Absensi
+                </li>
+                <!-- Menu Pengaturan -->
+                <li class="menu-item">
+                    <i class="fas fa-cog"></i>
+                    Pengaturan
+                </li>
+                <!-- Menu Keluar -->
+                <li class="menu-item" style="margin-top: auto;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Keluar
+                </li>
+            </ul>
+        </div>
+
+        <!-- Konten utama dashboard -->
+        <div class="content">
+            <!-- Header selamat datang -->
+            <div class="welcome-header">
+                <h1>Selamat Datang di Dashboard Admin</h1>
+                <p>PT Matura Jaya - Sistem Manajemen Absensi Karyawan</p>
+            </div>
+
+            <!-- Tampilkan pesan error jika ada (dari backend) -->
+            {% if error %}
+            <div class="alert alert-danger" role="alert" style="margin-bottom: 20px;">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <!-- Container untuk statistik absensi -->
+            <div class="stats-container">
+                <!-- Box statistik total karyawan -->
+                <div class="stat-box">
+                    <h3>
+                        <i class="fas fa-users icon"></i>
+                        Total Karyawan
+                    </h3>
+                    <div class="number">{{ total_karyawan }}</div>
+                    <p>Karyawan Aktif</p>
+                </div>
+
+                <!-- Box statistik karyawan hadir -->
+                <div class="stat-box">
+                    <h3>
+                        <i class="fas fa-user-check icon"></i>
+                        Hadir Hari Ini
+                    </h3>
+                    <div class="number">{{ hadir }}</div>
+                    <p>Karyawan Hadir</p>
+                </div>
+
+                <!-- Box statistik karyawan terlambat -->
+                <div class="stat-box">
+                    <h3>
+                        <i class="fas fa-user-clock icon"></i>
+                        Terlambat
+                    </h3>
+                    <div class="number">{{ terlambat }}</div>
+                    <p>Hari Ini</p>
+                </div>
+
+                <!-- Box statistik karyawan tidak hadir -->
+                <div class="stat-box">
+                    <h3>
+                        <i class="fas fa-user-times icon"></i>
+                        Tidak Hadir
+                    </h3>
+                    <div class="number">{{ tidak_hadir }}</div>
+                    <p>Hari Ini</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script JavaScript untuk interaktivitas -->
+    <script>
+        // Event listener untuk menu navigasi
+        // Mengarahkan ke halaman yang sesuai saat menu diklik
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Ambil teks menu yang diklik
+                const menuText = this.textContent.trim();
+                // Arahkan ke URL yang sesuai berdasarkan menu yang diklik
+                switch(menuText) {
+                    case 'Dashboard':
+                        window.location.href = '/admin/dashboard';
+                        break;
+                    case 'Data Karyawan':
+                        window.location.href = '/admin/datakaryawan';
+                        break;
+                    case 'Laporan Absensi':
+                        window.location.href = '/admin/laporanabsensi';
+                        break;
+                    case 'Pengaturan':
+                        window.location.href = '/admin/pengaturan';
+                        break;
+                    case 'Keluar':
+                        window.location.href = '/admin/logout';
+                        break;
+                }
+            });
+        });
+
+        // Tambahkan efek hover untuk tombol aksi
+        document.querySelectorAll('.action-button').forEach(button => {
+            // Event saat mouse di atas tombol
+            button.addEventListener('mouseover', function() {
+                // Efek visual saat hover
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                this.style.borderColor = '#1a73e8';
+                this.style.color = '#1a73e8';
+            });
+
+            // Event saat mouse keluar dari tombol
+            button.addEventListener('mouseout', function() {
+                // Kembalikan ke tampilan normal
+                this.style.transform = 'none';
+                this.style.boxShadow = 'none';
+                this.style.borderColor = '#e1e4e8';
+                this.style.color = '#555';
+            });
+        });
+    </script>
+</body>
+</html>

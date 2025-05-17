@@ -1,0 +1,363 @@
+<!--
+    File: admin-login.html
+    Deskripsi: Template untuk halaman login admin
+
+    Halaman ini digunakan untuk autentikasi admin sebelum dapat mengakses
+    dashboard admin dan fitur-fitur pengelolaan sistem absensi.
+
+    Fitur:
+    - Form login dengan username dan password
+    - Validasi input
+    - Tampilan pesan error jika login gagal
+
+    Endpoint terkait:
+    - GET /admin/login: Menampilkan halaman login
+    - POST /admin/login: Memproses form login
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - PT. Matura Jaya</title>
+    <!-- Favicon -->
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <!-- Import font Poppins dari Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Import Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Reset CSS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Pengaturan dasar untuk html dan body */
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Animasi untuk background gradient */
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Animasi untuk efek mengambang pada logo */
+        @keyframes float {
+            0% {
+                transform: translatey(0px);
+            }
+            50% {
+                transform: translatey(-10px);
+            }
+            100% {
+                transform: translatey(0px);
+            }
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1b2f45);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 15% 25%, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 50%),
+                radial-gradient(circle at 85% 75%, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 50%);
+            pointer-events: none;
+        }
+
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.4;
+            background-image:
+                linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.05) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.05) 75%);
+            background-size: 100px 100px;
+            background-position: 0 0, 0 50px, 50px -50px, -50px 0px;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-height: 100vh;
+            padding-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .company-logo {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 320px;
+            animation: float 6s ease-in-out infinite;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .logo-icon {
+            font-size: 32px;
+            color: #fff;
+            margin-bottom: 8px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .company-name {
+            font-size: 22px;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 3px;
+        }
+
+        .company-tagline {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            width: 320px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #16213e;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        h2 i {
+            font-size: 18px;
+            color: #0f3460;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #16213e;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            height: 36px;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper:hover .input-icon,
+        input:focus + .input-icon {
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .fa-user-tie {
+            color: #0f3460;
+            font-size: 18px;
+        }
+
+        .fa-key {
+            color: #1a1a2e;
+            font-size: 18px;
+        }
+
+        input {
+            width: 100%;
+            height: 100%;
+            padding: 0 10px 0 35px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            color: #16213e;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #0f3460;
+            box-shadow: 0 0 0 2px rgba(15, 52, 96, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(45deg, #0f3460, #16213e);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 5px;
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(45deg, #16213e, #0f3460);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+            padding: 5px;
+            background: rgba(220, 53, 69, 0.1);
+            border-radius: 4px;
+        }
+
+        @media (max-width: 360px) {
+            .company-logo,
+            .login-container {
+                width: 290px;
+            }
+
+            .company-logo {
+                padding: 10px;
+            }
+
+            .login-container {
+                padding: 15px;
+            }
+
+            .logo-icon {
+                font-size: 28px;
+            }
+
+            .company-name {
+                font-size: 20px;
+            }
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .alert-danger {
+            background-color: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background pattern untuk efek visual -->
+    <div class="bg-pattern"></div>
+
+    <!-- Container utama -->
+    <div class="main-container">
+        <!-- Logo perusahaan dengan animasi float -->
+        <div class="company-logo">
+            <i class="fas fa-building logo-icon"></i>
+            <h1 class="company-name">PT. Matura Jaya</h1>
+            <p class="company-tagline">Sistem Absensi Karyawan</p>
+        </div>
+
+        <!-- Container form login -->
+        <div class="login-container">
+            <h2><i class="fas fa-user-tie"></i> Admin Login</h2>
+
+            <!-- Form login dengan method POST ke endpoint /admin/login -->
+            <form action="/admin/login" method="POST">
+                <!-- Input username -->
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="username" name="username" required>
+                        <i class="fas fa-user input-icon"></i>
+                    </div>
+                </div>
+
+                <!-- Input password -->
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" name="password" required>
+                        <i class="fas fa-key input-icon"></i>
+                    </div>
+                </div>
+
+                <!-- Tampilkan pesan error jika ada (dari backend) -->
+                {% if error %}
+                <div class="error-message">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <!-- Tombol submit -->
+                <button type="submit" class="btn-login">Login</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
